@@ -1,0 +1,10 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+.venv/
+.env
+.streamlit/secrets.toml
+data/raw/fifa_reports/
+data/raw/statsbomb/events/
+data/raw/statsbomb/matches/
+src/worldcup_prediction.egg-info/

@@ -1,0 +1,23 @@
+{
+  "combined_results_rows": 49452,
+  "fifa_hub_url": "https://www.fifatrainingcentre.com/en/fifa-world-cup-2026/match-report-hub.php",
+  "goalscorer_rows": 47628,
+  "goalscorers_url": "https://raw.githubusercontent.com/martj42/international_results/master/goalscorers.csv",
+  "historical_results_rows": 49425,
+  "historical_results_url": "https://raw.githubusercontent.com/martj42/international_results/master/results.csv",
+  "parse_errors": [],
+  "player_profiles_rows": 14901,
+  "refreshed_at": "2026-06-24T14:49:02.734997+00:00",
+  "report_links_found": 48,
+  "report_matches_parsed": 48,
+  "report_team_rows_parsed": 96,
+  "reports_downloaded_or_cached": 48,
+  "reports_downloaded_this_run": 0,
+  "statsbomb_competitions_found": 80,
+  "statsbomb_competitions_url": "https://raw.githubusercontent.com/statsbomb/open-data/master/data/competitions.json",
+  "statsbomb_event_errors": 0,
+  "statsbomb_international_competitions": 12,
+  "statsbomb_matches_available": 333,
+  "statsbomb_matches_loaded": 80,
+  "team_profiles_rows": 336
+}

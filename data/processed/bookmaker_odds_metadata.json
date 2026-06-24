@@ -1,0 +1,12 @@
+{
+  "bookmakers": [
+    "draftkings"
+  ],
+  "date_range": "20260611-20260719",
+  "events_returned": 104,
+  "markets": "h2h,spreads,totals",
+  "odds_rows": 196,
+  "refreshed_at": "2026-06-23T16:31:58.281970+00:00",
+  "source": "ESPN public scoreboard",
+  "source_url": "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard"
+}

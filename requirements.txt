@@ -1,0 +1,7 @@
+beautifulsoup4>=4.12
+numpy>=1.26
+pandas>=2.2
+plotly>=5.22
+pypdf>=4.2
+requests>=2.32
+streamlit>=1.36
