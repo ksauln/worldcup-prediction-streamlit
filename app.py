@@ -569,10 +569,32 @@ def apply_theme(theme: VisualTheme, auto_mode: bool = False) -> None:
             color: var(--accent) !important;
         }}
         @media (max-width: 760px) {{
+            header[data-testid="stHeader"] {{
+                display: block !important;
+                visibility: visible !important;
+                height: 3rem !important;
+                background: var(--app-bg) !important;
+                border-bottom: 1px solid var(--border);
+                color: var(--text) !important;
+            }}
+            [data-testid="stToolbar"] {{
+                display: flex !important;
+                visibility: visible !important;
+                height: 3rem !important;
+                background: transparent !important;
+            }}
+            header[data-testid="stHeader"] button,
+            button[data-testid="stExpandSidebarButton"],
+            [data-testid="collapsedControl"],
+            [data-testid="stSidebarCollapsedControl"] {{
+                display: inline-flex !important;
+                visibility: visible !important;
+                color: var(--text) !important;
+            }}
             .block-container,
             [data-testid="stMainBlockContainer"],
             [data-testid="stAppViewContainer"] .main .block-container {{
-                padding: 0.85rem 0.85rem 2rem !important;
+                padding: 3.75rem 0.85rem 2rem !important;
             }}
             .header-top,
             .forecast-topline {{
