@@ -61,9 +61,12 @@ st.set_page_config(
 )
 
 DATA_CACHE_VERSION = 4
+STARTUP_REFRESH_CACHE_VERSION = 1
 ODDS_CACHE_VERSION = 2
 SCHEDULE_CACHE_VERSION = 1
 EVALUATION_CACHE_VERSION = 1
+STARTUP_REFRESH_TTL_SECONDS = 60 * 60
+SCHEDULE_REFRESH_TTL_SECONDS = 60 * 15
 BOOKMAKER_LABELS = {
     "draftkings": "DraftKings",
     "fanduel": "FanDuel",
@@ -105,13 +108,28 @@ def load_data(cache_version: int) -> DataBundle:
     return ensure_bundle_schema(load_cached_data())
 
 
+@st.cache_data(show_spinner=False, ttl=STARTUP_REFRESH_TTL_SECONDS)
+def refresh_startup_data(cache_version: int) -> DataBundle:
+    _ = cache_version
+    return ensure_bundle_schema(refresh_data(force=False))
+
+
+def load_startup_data() -> DataBundle:
+    try:
+        with st.spinner("Refreshing latest data..."):
+            return refresh_startup_data(STARTUP_REFRESH_CACHE_VERSION)
+    except Exception as exc:  # noqa: BLE001 - keep the public app usable if a source is unavailable.
+        st.warning(f"Automatic data refresh failed; showing cached data. {exc}")
+        return load_data(DATA_CACHE_VERSION)
+
+
 @st.cache_data(show_spinner=False)
 def load_odds_data(cache_version: int) -> tuple[pd.DataFrame, dict[str, Any]]:
     _ = cache_version
     return load_cached_odds()
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, ttl=SCHEDULE_REFRESH_TTL_SECONDS)
 def load_upcoming_matchups(cache_version: int) -> pd.DataFrame:
     _ = cache_version
     return fetch_upcoming_fixtures()
@@ -762,9 +780,10 @@ def render_hero(
     )
 
 
-def refresh_controls() -> str:
+def refresh_controls() -> tuple[str, DataBundle | None]:
     st.sidebar.header("Display")
     theme_mode = st.sidebar.selectbox("Theme", ["Light", "Dark"], index=0)
+    refreshed_bundle = None
 
     st.sidebar.header("Data Refresh")
     download_behavior = st.sidebar.selectbox("Source files", ["Use cache when available", "Force redownload"])
@@ -778,13 +797,16 @@ def refresh_controls() -> str:
     if st.sidebar.button("Refresh model data", type="primary", width="stretch"):
         with st.spinner("Downloading sources, parsing PDFs, and rebuilding model inputs..."):
             try:
-                refresh_data(force=force, max_reports=int(max_reports) if max_reports else None)
+                refreshed_bundle = ensure_bundle_schema(
+                    refresh_data(force=force, max_reports=int(max_reports) if max_reports else None)
+                )
             except Exception as exc:  # noqa: BLE001 - surface refresh failures in the dashboard.
                 st.sidebar.error(f"Refresh failed: {exc}")
             else:
                 load_data.clear()
+                refresh_startup_data.clear()
                 st.sidebar.success("Data refreshed.")
-    return theme_mode
+    return theme_mode, refreshed_bundle
 
 
 def show_empty_state(bundle: DataBundle) -> bool:
@@ -2159,11 +2181,16 @@ def data_health_page(bundle: DataBundle) -> None:
 
 
 def main() -> None:
-    theme_mode = refresh_controls()
+    theme_mode, refreshed_bundle = refresh_controls()
     theme = get_visual_theme(theme_mode)
     apply_theme(theme)
-    page = st.selectbox("View", DASHBOARD_PAGES, key="dashboard_page")
-    bundle = load_data(DATA_CACHE_VERSION)
+    page = st.selectbox(
+        "View",
+        DASHBOARD_PAGES,
+        index=DASHBOARD_PAGES.index("Upcoming Matchups"),
+        key="dashboard_page",
+    )
+    bundle = refreshed_bundle if refreshed_bundle is not None else load_startup_data()
 
     if page == "Matchup Predictor":
         matchup_page(bundle, theme)
