@@ -79,6 +79,17 @@ BOOKMAKER_LABELS = {
     "mybookieag": "MyBookie.ag",
     "lowvig": "LowVig.ag",
 }
+DASHBOARD_PAGES = [
+    "Matchup Predictor",
+    "Upcoming Matchups",
+    "Model Performance",
+    "Recent Results",
+    "2026 Reports",
+    "Team Ratings",
+    "Player Profiles",
+    "Data Sources",
+    "Data Health",
+]
 
 
 def ensure_bundle_schema(bundle: DataBundle) -> DataBundle:
@@ -2151,23 +2162,8 @@ def main() -> None:
     theme_mode = refresh_controls()
     theme = get_visual_theme(theme_mode)
     apply_theme(theme)
+    page = st.selectbox("View", DASHBOARD_PAGES, key="dashboard_page")
     bundle = load_data(DATA_CACHE_VERSION)
-
-    st.sidebar.header("View")
-    page = st.sidebar.selectbox(
-        "Dashboard page",
-        [
-            "Matchup Predictor",
-            "Upcoming Matchups",
-            "Model Performance",
-            "Recent Results",
-            "2026 Reports",
-            "Team Ratings",
-            "Player Profiles",
-            "Data Sources",
-            "Data Health",
-        ],
-    )
 
     if page == "Matchup Predictor":
         matchup_page(bundle, theme)
