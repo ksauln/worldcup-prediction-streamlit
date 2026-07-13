@@ -99,6 +99,33 @@ def _read_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def _max_date_string(frame: pd.DataFrame | None, column: str = "date") -> str:
+    if frame is None or frame.empty or column not in frame:
+        return ""
+    latest = pd.to_datetime(frame[column], errors="coerce").max()
+    return "" if pd.isna(latest) else latest.date().isoformat()
+
+
+def _source_date_metadata(
+    historical_results: pd.DataFrame | None = None,
+    goalscorers: pd.DataFrame | None = None,
+    report_matches: pd.DataFrame | None = None,
+    report_team_stats: pd.DataFrame | None = None,
+    statsbomb_team_stats: pd.DataFrame | None = None,
+    combined_results: pd.DataFrame | None = None,
+    player_profiles: pd.DataFrame | None = None,
+) -> dict[str, str]:
+    return {
+        "historical_results_max_date": _max_date_string(historical_results),
+        "goalscorers_max_date": _max_date_string(goalscorers),
+        "report_matches_max_date": _max_date_string(report_matches),
+        "report_team_stats_max_date": _max_date_string(report_team_stats),
+        "statsbomb_team_stats_max_date": _max_date_string(statsbomb_team_stats),
+        "model_results_max_date": _max_date_string(combined_results),
+        "player_profiles_max_date": _max_date_string(player_profiles, "last_goal_date"),
+    }
+
+
 def _rows_for_source_urls(frame: pd.DataFrame, urls: set[str]) -> pd.DataFrame:
     if frame.empty or "source_url" not in frame.columns or not urls:
         return pd.DataFrame()
@@ -240,6 +267,15 @@ def refresh_data(
         "team_profiles_rows": len(team_profiles),
         "player_profiles_rows": len(player_profiles),
         "parse_errors": parse_errors,
+        **_source_date_metadata(
+            historical_results=historical_results,
+            goalscorers=goalscorers,
+            report_matches=report_matches,
+            report_team_stats=report_team_stats,
+            statsbomb_team_stats=statsbomb_team_stats,
+            combined_results=combined_results,
+            player_profiles=player_profiles,
+        ),
         **statsbomb_metadata,
     }
     _write_json(METADATA_PATH, metadata)
@@ -265,6 +301,17 @@ def load_cached_data() -> DataBundle:
     combined_results = _read_csv(COMBINED_RESULTS_PATH, parse_dates=["date"])
     team_profiles = _read_csv(TEAM_PROFILES_PATH)
     player_profiles = _read_csv(PLAYER_PROFILES_PATH, parse_dates=["last_goal_date"])
+
+    derived_dates = _source_date_metadata(
+        report_matches=report_matches,
+        report_team_stats=report_team_stats,
+        statsbomb_team_stats=statsbomb_team_stats,
+        combined_results=combined_results,
+        player_profiles=player_profiles,
+    )
+    for key, value in derived_dates.items():
+        if value:
+            metadata[key] = value
 
     has_current_profile_schema = REQUIRED_TEAM_PROFILE_COLUMNS.issubset(set(team_profiles.columns))
     if (team_profiles.empty or not has_current_profile_schema) and not combined_results.empty:

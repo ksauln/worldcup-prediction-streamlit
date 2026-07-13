@@ -26,11 +26,13 @@ from worldcup_prediction.config import (  # noqa: E402
     STATSBOMB_COMPETITIONS_URL,
 )
 from worldcup_prediction.evaluation import (  # noqa: E402
+    prediction_audit_metric_guide,
     prediction_performance_summary,
     rolling_match_predictions,
 )
 from worldcup_prediction.model import (  # noqa: E402
     RECENT_MATCH_HALFLIFE_DAYS,
+    active_team_names,
     predict_matchup,
     recent_results_with_weights,
     team_match_frame,
@@ -60,8 +62,8 @@ st.set_page_config(
     },
 )
 
-DATA_CACHE_VERSION = 4
-STARTUP_REFRESH_CACHE_VERSION = 1
+DATA_CACHE_VERSION = 5
+STARTUP_REFRESH_CACHE_VERSION = 2
 ODDS_CACHE_VERSION = 2
 SCHEDULE_CACHE_VERSION = 1
 EVALUATION_CACHE_VERSION = 1
@@ -744,6 +746,24 @@ def compact_timestamp(value: Any) -> str:
     return timestamp.strftime("%b %d, %Y %H:%M UTC")
 
 
+def compact_date(value: Any) -> str:
+    timestamp = pd.to_datetime(value, errors="coerce")
+    if pd.isna(timestamp):
+        return "not available"
+    return timestamp.strftime("%b %d, %Y")
+
+
+def model_data_max_date(bundle: DataBundle) -> pd.Timestamp | None:
+    metadata = bundle.metadata or {}
+    metadata_date = pd.to_datetime(metadata.get("model_results_max_date"), errors="coerce")
+    if pd.notna(metadata_date):
+        return metadata_date
+    if bundle.combined_results.empty or "date" not in bundle.combined_results:
+        return None
+    latest = pd.to_datetime(bundle.combined_results["date"], errors="coerce").max()
+    return None if pd.isna(latest) else latest
+
+
 def render_hero(
     bundle: DataBundle,
     title: str = "World Cup Prediction Dashboard",
@@ -754,10 +774,12 @@ def render_hero(
 ) -> None:
     metadata = bundle.metadata or {}
     refreshed_at = compact_timestamp(metadata.get("refreshed_at", "not yet"))
+    model_through = compact_date(model_data_max_date(bundle))
     chips = [
         f"{compact_number(metadata.get('report_matches_parsed', len(bundle.report_matches)))} reports parsed",
         f"{compact_number(metadata.get('historical_results_rows', len(bundle.combined_results)))} result rows",
         f"{compact_number(metadata.get('player_profiles_rows', len(bundle.player_profiles)))} player profiles",
+        f"Model data through {model_through}",
         f"Updated {refreshed_at}",
     ]
     chip_html = "".join(f'<span class="pill">{chip}</span>' for chip in chips)
@@ -984,12 +1006,12 @@ def sportsbook_options() -> list[str]:
 def confidence_label(probabilities: list[float]) -> str:
     ordered = sorted(probabilities, reverse=True)
     if not ordered:
-        return "Low confidence"
+        return "No model lean"
     margin = ordered[0] - (ordered[1] if len(ordered) > 1 else 0.0)
     if margin >= 0.18:
-        return "High confidence"
+        return "Clear model lean"
     if margin >= 0.08:
-        return "Medium confidence"
+        return "Model lean"
     return "Tight matchup"
 
 
@@ -1584,7 +1606,7 @@ def matchup_page(bundle: DataBundle, theme: VisualTheme) -> None:
         return
 
     profiles = bundle.team_profiles
-    teams = sorted(profiles["team"].dropna().astype(str).unique())
+    teams = active_team_names(bundle.combined_results, profiles=profiles)
     if len(teams) < 2:
         st.warning("At least two teams are required for a matchup.")
         return
@@ -1626,7 +1648,7 @@ def upcoming_matchups_page(bundle: DataBundle, theme: VisualTheme) -> None:
         return
 
     profiles = bundle.team_profiles
-    teams = sorted(profiles["team"].dropna().astype(str).unique())
+    teams = active_team_names(bundle.combined_results, profiles=profiles)
     if len(teams) < 2:
         st.warning("At least two teams are required for a matchup.")
         return
@@ -1754,6 +1776,35 @@ def model_performance_page(bundle: DataBundle, theme: VisualTheme) -> None:
         '<p class="toolbar-note">Each row is predicted with only matches and report stats dated before that match. Lower Brier and log-loss scores are better.</p>',
         unsafe_allow_html=True,
     )
+    audit_guide_rows = prediction_audit_metric_guide()
+    audit_help = {
+        row["metric"]: " ".join(
+            [row["meaning"], f"{row['direction']}.", row["reference"], row["how_to_read"]]
+        )
+        for row in audit_guide_rows
+    }
+    with st.expander("How to read the prediction audit"):
+        st.markdown(
+            """
+            Start with the **number of matches** so you know how stable the summary is. Then use
+            **Brier score** and **outcome log loss** to judge the win/draw/loss probabilities, and
+            **score log loss** to judge the full exact-score distribution. Accuracy and exact-score
+            hits are intuitive, but they do not show whether the probabilities were well calibrated.
+
+            Read scores comparatively: use the same matches to compare model versions and simple
+            baselines. One surprising result can be perfectly compatible with a good probabilistic forecast.
+            """
+        )
+        guide_frame = pd.DataFrame(audit_guide_rows).rename(
+            columns={
+                "metric": "Metric or field",
+                "meaning": "What it means",
+                "direction": "Better direction",
+                "reference": "Reference point",
+                "how_to_read": "How to read it",
+            }
+        )
+        st.dataframe(guide_frame, width="stretch", hide_index=True)
     controls = st.columns([1.2, 0.8, 0.8, 0.8], vertical_alignment="bottom")
     with controls[0]:
         selected_tournament = st.selectbox(
@@ -1764,15 +1815,18 @@ def model_performance_page(bundle: DataBundle, theme: VisualTheme) -> None:
     with controls[1]:
         match_count = st.slider("Completed matches", min_value=10, max_value=200, value=60, step=10)
     with controls[2]:
-        training_label = st.selectbox("Training history", ["Since 2018", "Since 2020", "Since 2022", "All prior"])
+        training_label = st.selectbox(
+            "Training history",
+            ["Production (all prior)", "Since 2018", "Since 2020", "Since 2022"],
+        )
     with controls[3]:
         min_training_matches = st.slider("Min prior matches", min_value=10, max_value=200, value=50, step=10)
 
     training_start = {
+        "Production (all prior)": None,
         "Since 2018": "2018-01-01",
         "Since 2020": "2020-01-01",
         "Since 2022": "2022-01-01",
-        "All prior": None,
     }[training_label]
     tournament_filter = None if selected_tournament == "All tournaments" else selected_tournament
 
@@ -1793,13 +1847,43 @@ def model_performance_page(bundle: DataBundle, theme: VisualTheme) -> None:
         return
 
     summary = prediction_performance_summary(audit)
-    metrics = st.columns(6)
-    metrics[0].metric("Matches audited", f"{int(summary['matches'])}")
-    metrics[1].metric("Outcome accuracy", pct(summary["outcome_accuracy"]))
-    metrics[2].metric("Exact score hit", pct(summary["exact_score_accuracy"]))
-    metrics[3].metric("Avg actual-result probability", pct(summary["average_actual_outcome_probability"]))
-    metrics[4].metric("Brier score", f"{summary['average_brier_score']:.3f}")
-    metrics[5].metric("Score log loss", f"{summary['average_score_log_loss']:.3f}")
+    primary_metrics = st.columns(4)
+    primary_metrics[0].metric(
+        "Matches audited",
+        f"{int(summary['matches'])}",
+        help=audit_help["Matches audited"],
+    )
+    primary_metrics[1].metric(
+        "Outcome accuracy",
+        pct(summary["outcome_accuracy"]),
+        help=audit_help["Outcome accuracy"],
+    )
+    primary_metrics[2].metric(
+        "Exact score hit",
+        pct(summary["exact_score_accuracy"]),
+        help=audit_help["Exact score hit"],
+    )
+    primary_metrics[3].metric(
+        "Avg actual-result probability",
+        pct(summary["average_actual_outcome_probability"]),
+        help=audit_help["Avg actual-result probability"],
+    )
+    scoring_metrics = st.columns(3)
+    scoring_metrics[0].metric(
+        "Brier score",
+        f"{summary['average_brier_score']:.3f}",
+        help=audit_help["Brier score"],
+    )
+    scoring_metrics[1].metric(
+        "Outcome log loss",
+        f"{summary['average_outcome_log_loss']:.3f}",
+        help=audit_help["Outcome log loss"],
+    )
+    scoring_metrics[2].metric(
+        "Score log loss",
+        f"{summary['average_score_log_loss']:.3f}",
+        help=audit_help["Score log loss"],
+    )
 
     chart_rows = audit.sort_values("date").copy()
     chart_rows["match"] = chart_rows["home_team"] + " vs " + chart_rows["away_team"]
@@ -2167,6 +2251,24 @@ def data_health_page(bundle: DataBundle) -> None:
     )
 
     metadata = bundle.metadata or {}
+    model_date = model_data_max_date(bundle)
+    if model_date is not None:
+        model_date_naive = model_date.tz_convert("UTC").tz_localize(None) if model_date.tzinfo else model_date
+        model_age_days = max((pd.Timestamp.now(tz="UTC").tz_localize(None) - model_date_naive).days, 0)
+        if model_age_days > 3:
+            st.warning(
+                f"Model results are {model_age_days} days old (through {compact_date(model_date)}). "
+                "Confirm the scheduled refresh completed before relying on upcoming-match predictions."
+            )
+
+    st.subheader("Source dates")
+    source_dates = st.columns(5)
+    source_dates[0].metric("Model results", compact_date(metadata.get("model_results_max_date")))
+    source_dates[1].metric("Historical results", compact_date(metadata.get("historical_results_max_date")))
+    source_dates[2].metric("FIFA reports", compact_date(metadata.get("report_matches_max_date")))
+    source_dates[3].metric("Goalscorers", compact_date(metadata.get("goalscorers_max_date")))
+    source_dates[4].metric("StatsBomb", compact_date(metadata.get("statsbomb_team_stats_max_date")))
+
     if metadata:
         cols = st.columns(6)
         cols[0].metric("Report links", metadata.get("report_links_found", 0))

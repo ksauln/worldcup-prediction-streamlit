@@ -117,6 +117,39 @@ def combine_results(historical_results: pd.DataFrame, report_matches: pd.DataFra
     return combined.sort_values("date").reset_index(drop=True)
 
 
+def active_team_names(
+    results: pd.DataFrame | None,
+    profiles: pd.DataFrame | None = None,
+    reference_date: str | pd.Timestamp | None = None,
+    window_days: int = 1460,
+) -> list[str]:
+    profile_teams = set()
+    if profiles is not None and not profiles.empty and "team" in profiles:
+        profile_teams = set(profiles["team"].dropna().astype(str))
+
+    if results is None or results.empty or "date" not in results:
+        return sorted(profile_teams)
+
+    dated = results.copy()
+    dated["date"] = pd.to_datetime(dated["date"], errors="coerce")
+    dated = dated.dropna(subset=["date"])
+    if dated.empty:
+        return sorted(profile_teams)
+
+    reference = pd.to_datetime(reference_date, errors="coerce") if reference_date is not None else dated["date"].max()
+    if pd.isna(reference):
+        reference = dated["date"].max()
+    cutoff = reference - pd.Timedelta(days=max(int(window_days), 1))
+    active_rows = dated[dated["date"].ge(cutoff)]
+    active = set()
+    for column in ("home_team", "away_team"):
+        if column in active_rows:
+            active.update(active_rows[column].dropna().map(canonical_team_name).astype(str))
+    if profile_teams:
+        active &= profile_teams
+    return sorted(active or profile_teams)
+
+
 def compute_elo_ratings(results: pd.DataFrame) -> pd.DataFrame:
     ratings: dict[str, float] = {}
     results = _coerce_results(results)

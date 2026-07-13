@@ -34,6 +34,96 @@ EVALUATION_COLUMNS = [
 ]
 
 
+def prediction_audit_metric_guide() -> list[dict[str, str]]:
+    """Return plain-language guidance for interpreting the prediction audit."""
+    return [
+        {
+            "metric": "Matches audited",
+            "meaning": "Completed matches included in the selected rolling evaluation.",
+            "direction": "More is stronger evidence",
+            "reference": "Small samples can move sharply after one match.",
+            "how_to_read": "Use this to judge how much confidence to place in every other summary score.",
+        },
+        {
+            "metric": "Outcome accuracy",
+            "meaning": "Share of matches where the highest-probability home, draw, or away outcome occurred.",
+            "direction": "Higher is better",
+            "reference": "Compare with simple favorite and rating baselines on the same matches.",
+            "how_to_read": "Useful for picks, but it ignores whether a correct forecast was 36% or 90% confident.",
+        },
+        {
+            "metric": "Exact score hit",
+            "meaning": "Share of matches where the single most likely scoreline exactly matched the result.",
+            "direction": "Higher is better",
+            "reference": "Exact-score hit rates are naturally much lower than outcome accuracy.",
+            "how_to_read": "Do not treat the predicted score as the only plausible result; inspect the score matrix too.",
+        },
+        {
+            "metric": "Avg actual-result probability",
+            "meaning": "Average probability the model assigned to the home, draw, or away outcome that occurred.",
+            "direction": "Higher is better",
+            "reference": "A uniform three-outcome forecast assigns 33.3% to every actual result.",
+            "how_to_read": "Rewards forecasts that consistently place substantial probability on what happens.",
+        },
+        {
+            "metric": "Home / draw / away probabilities",
+            "meaning": "The model's three mutually exclusive regulation-result probabilities for an individual match.",
+            "direction": "Must total 100%",
+            "reference": "The largest probability is the predicted outcome, not a guarantee.",
+            "how_to_read": "A 45% favorite is still expected not to win 55% of the time.",
+        },
+        {
+            "metric": "Actual-outcome probability",
+            "meaning": "Probability assigned to the outcome that actually occurred in one audited match.",
+            "direction": "Higher is better",
+            "reference": "Read across many matches rather than judging the model from one upset.",
+            "how_to_read": "Low values identify surprises or confident misses; repeated low values indicate poor calibration.",
+        },
+        {
+            "metric": "Brier score",
+            "meaning": "Sum of squared errors across the home, draw, and away probabilities.",
+            "direction": "Lower is better",
+            "reference": "0 is perfect; 2 is worst; a uniform 1X2 forecast scores 0.667.",
+            "how_to_read": "Measures probability calibration and accuracy together; confident wrong forecasts are penalized more.",
+        },
+        {
+            "metric": "Outcome log loss",
+            "meaning": "Negative log of the probability assigned to the actual home, draw, or away outcome.",
+            "direction": "Lower is better",
+            "reference": "0 is perfect; there is no upper limit; a uniform 1X2 forecast scores 1.099.",
+            "how_to_read": "Especially punishes assigning tiny probability to an outcome that occurs.",
+        },
+        {
+            "metric": "Score log loss",
+            "meaning": "Negative log of the probability assigned to the exact final scoreline.",
+            "direction": "Lower is better",
+            "reference": "0 is perfect and there is no upper limit; compare models on the same matches.",
+            "how_to_read": "Evaluates the full score distribution, so it is more informative than exact-score hit rate alone.",
+        },
+        {
+            "metric": "Predicted score",
+            "meaning": "The single scoreline with the highest probability in the model's score matrix.",
+            "direction": "Descriptive, not a quality score",
+            "reference": "Several neighboring scorelines may have nearly identical probabilities.",
+            "how_to_read": "Use it as a summary of the distribution, not as a claim that this score is likely by itself.",
+        },
+        {
+            "metric": "Expected goals (xG)",
+            "meaning": "Model-implied average goals for each team across many repetitions of the matchup.",
+            "direction": "Descriptive, not a quality score",
+            "reference": "An expectation of 1.6 goals does not mean the team will score exactly 1.6 or even exactly 2.",
+            "how_to_read": "Compare the two teams and their total to understand strength and expected match tempo.",
+        },
+        {
+            "metric": "Training matches",
+            "meaning": "Number of earlier result rows available when that audited match was predicted.",
+            "direction": "Context only",
+            "reference": "More history is not automatically better if it is stale or less relevant.",
+            "how_to_read": "Very small histories make team ratings and form estimates less stable.",
+        },
+    ]
+
+
 def empty_evaluation_frame() -> pd.DataFrame:
     return pd.DataFrame(columns=EVALUATION_COLUMNS)
 

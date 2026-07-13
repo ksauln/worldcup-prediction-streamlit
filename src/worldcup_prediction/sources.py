@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import re
 import time
+from datetime import datetime, timezone
 from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import unquote, urljoin, urlparse
@@ -28,6 +29,9 @@ from worldcup_prediction.config import (
     USER_AGENT,
 )
 from worldcup_prediction.teams import canonical_team_name
+
+
+DEFAULT_SOURCE_CACHE_MAX_AGE_HOURS = 6.0
 
 
 @dataclass(frozen=True)
@@ -138,12 +142,27 @@ def download_report_pdfs(
     return downloaded
 
 
+def cache_file_is_stale(
+    cache_path: Path,
+    max_age_hours: float | None = DEFAULT_SOURCE_CACHE_MAX_AGE_HOURS,
+    now: datetime | None = None,
+) -> bool:
+    if not cache_path.exists():
+        return True
+    if max_age_hours is None:
+        return False
+    reference = now or datetime.now(timezone.utc)
+    age_seconds = max(reference.timestamp() - cache_path.stat().st_mtime, 0.0)
+    return age_seconds >= max(float(max_age_hours), 0.0) * 60 * 60
+
+
 def load_historical_results(
     force: bool = False,
     source_url: str = HISTORICAL_RESULTS_URL,
     cache_path: Path = HISTORICAL_RESULTS_PATH,
+    max_cache_age_hours: float | None = DEFAULT_SOURCE_CACHE_MAX_AGE_HOURS,
 ) -> pd.DataFrame:
-    if force or not cache_path.exists():
+    if force or cache_file_is_stale(cache_path, max_cache_age_hours):
         download_url(source_url, cache_path, force=True)
 
     results = pd.read_csv(cache_path)
@@ -177,8 +196,9 @@ def load_goalscorers(
     force: bool = False,
     source_url: str = GOALSCORERS_URL,
     cache_path: Path = GOALSCORERS_PATH,
+    max_cache_age_hours: float | None = DEFAULT_SOURCE_CACHE_MAX_AGE_HOURS,
 ) -> pd.DataFrame:
-    if force or not cache_path.exists():
+    if force or cache_file_is_stale(cache_path, max_cache_age_hours):
         download_url(source_url, cache_path, force=True)
 
     goalscorers = pd.read_csv(cache_path)

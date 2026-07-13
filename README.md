@@ -265,11 +265,13 @@ Detailed commands are in [DEPLOYMENT_STEPS.md](DEPLOYMENT_STEPS.md).
 ## Operational Notes
 
 - The app works without an API key.
+- A GitHub Actions workflow refreshes model data every six hours and commits changed artifacts so Streamlit redeploys from a stable snapshot.
+- Historical-results and goalscorer caches expire after six hours; the dashboard shows the latest date available from each source and warns when model results are stale.
 - `Refresh schedule` uses ESPN public schedule data.
 - Public odds refresh uses no-key public odds when ESPN exposes them.
 - Optional multi-book odds support requires an `ODDS_API_KEY` secret.
-- Streamlit Cloud storage is ephemeral, so data written by refresh buttons can disappear after restarts or redeploys.
-- For stable public demos, commit refreshed `data/processed/` files to the deploy repository.
+- Streamlit Cloud storage is ephemeral, so session refreshes remain a fallback rather than the publication mechanism.
+- The scheduled workflow commits refreshed `data/processed/` files to keep the public deployment reproducible.
 
 ## Limitations
 
