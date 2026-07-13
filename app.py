@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from html import escape
+from importlib import reload
 import sys
 from pathlib import Path
 from typing import Any
@@ -25,11 +26,17 @@ from worldcup_prediction.config import (  # noqa: E402
     ODDS_API_KEY_ENV,
     STATSBOMB_COMPETITIONS_URL,
 )
-from worldcup_prediction.evaluation import (  # noqa: E402
-    prediction_audit_metric_guide,
-    prediction_performance_summary,
-    rolling_match_predictions,
-)
+from worldcup_prediction import evaluation as evaluation_module  # noqa: E402
+
+# Streamlit Cloud can rerun a newly pulled app.py while retaining an older imported
+# module. Reload only when the new dashboard expects an evaluation API that the
+# in-memory module does not yet expose.
+if not hasattr(evaluation_module, "prediction_audit_metric_guide"):
+    evaluation_module = reload(evaluation_module)
+
+prediction_audit_metric_guide = evaluation_module.prediction_audit_metric_guide
+prediction_performance_summary = evaluation_module.prediction_performance_summary
+rolling_match_predictions = evaluation_module.rolling_match_predictions
 from worldcup_prediction.model import (  # noqa: E402
     RECENT_MATCH_HALFLIFE_DAYS,
     active_team_names,

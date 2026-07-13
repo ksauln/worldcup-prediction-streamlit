@@ -1,0 +1,32 @@
+name: Validate public app
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  boot-smoke-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Compile application
+        run: python -m compileall -q app.py src
+
+      - name: Import dashboard entry point
+        run: python -c "import app"
+
+      - name: Import after an evaluation-module hot reload
+        run: python -c "import sys; from pathlib import Path; sys.path.insert(0, str(Path.cwd() / 'src')); import worldcup_prediction.evaluation as evaluation; del evaluation.prediction_audit_metric_guide; import app"

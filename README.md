@@ -272,6 +272,7 @@ Detailed commands are in [DEPLOYMENT_STEPS.md](DEPLOYMENT_STEPS.md).
 - Optional multi-book odds support requires an `ODDS_API_KEY` secret.
 - Streamlit Cloud storage is ephemeral, so session refreshes remain a fallback rather than the publication mechanism.
 - The scheduled workflow commits refreshed `data/processed/` files to keep the public deployment reproducible.
+- Every push to `main` runs a standalone dashboard import check; do not deploy when the `Validate public app` workflow fails.
 
 ## Limitations
 
