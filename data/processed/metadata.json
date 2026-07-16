@@ -1,17 +1,17 @@
 {
-  "combined_results_rows": 49508,
+  "combined_results_rows": 49521,
   "fifa_hub_url": "https://www.fifatrainingcentre.com/en/fifa-world-cup-2026/match-report-hub.php",
-  "goalscorer_rows": 47856,
-  "goalscorers_max_date": "2026-07-14",
+  "goalscorer_rows": 47859,
+  "goalscorers_max_date": "2026-07-15",
   "goalscorers_url": "https://raw.githubusercontent.com/martj42/international_results/master/goalscorers.csv",
-  "historical_results_max_date": "2026-07-14",
-  "historical_results_rows": 49506,
+  "historical_results_max_date": "2026-07-15",
+  "historical_results_rows": 49518,
   "historical_results_url": "https://raw.githubusercontent.com/martj42/international_results/master/results.csv",
-  "model_results_max_date": "2026-07-14",
+  "model_results_max_date": "2026-07-15",
   "parse_errors": [],
-  "player_profiles_max_date": "2026-07-14",
+  "player_profiles_max_date": "2026-07-15",
   "player_profiles_rows": 14935,
-  "refreshed_at": "2026-07-15T19:36:54.375739+00:00",
+  "refreshed_at": "2026-07-16T03:37:02.429640+00:00",
   "report_links_found": 72,
   "report_links_reused_from_cache": 72,
   "report_matches_max_date": "2026-06-27",
@@ -30,5 +30,5 @@
   "statsbomb_matches_loaded": 80,
   "statsbomb_refresh_error": "",
   "statsbomb_team_stats_max_date": "2024-07-15",
-  "team_profiles_rows": 336
+  "team_profiles_rows": 337
 }
