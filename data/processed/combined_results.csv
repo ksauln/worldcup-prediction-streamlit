@@ -41325,7 +41325,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2018-03-21,Madagascar,Togo,0,0,Friendly,Saint-Leu-la-Forêt,France,True
 2018-03-21,Tahiti,New Caledonia,0,0,Friendly,Pirae,Tahiti,False
 2018-03-21,Zambia,Zimbabwe,2,2,Friendly,Ndola,Zambia,False
-2018-03-21,Iraq,Qatar,2,3,Friendly,Basra,Iraq,False
+2018-03-21,Iraq,Qatar,2,3,International Friendship Championship,Basra,Iraq,False
 2018-03-22,Denmark,Panama,1,0,Friendly,Brøndby,Denmark,False
 2018-03-22,Burkina Faso,Guinea-Bissau,2,0,Friendly,Limeil-Brévannes,France,True
 2018-03-22,Belize,Grenada,4,2,Friendly,Belmopan,Belize,False
@@ -41381,7 +41381,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2018-03-24,Côte d'Ivoire,Togo,2,2,Friendly,Beauvais,France,True
 2018-03-24,Northern Ireland,Korea Republic,2,1,Friendly,Belfast,Northern Ireland,False
 2018-03-24,Mauritania,Guinea,2,0,Friendly,Nouakchott,Mauritania,False
-2018-03-24,Qatar,Syria,2,2,Friendly,Basra,Iraq,True
+2018-03-24,Qatar,Syria,2,2,International Friendship Championship,Basra,Iraq,True
 2018-03-24,Sweden,Chile,1,2,Friendly,Solna,Sweden,False
 2018-03-24,Tahiti,New Caledonia,4,3,Friendly,Pirae,Tahiti,False
 2018-03-24,Uganda,São Tomé and Príncipe,3,1,Friendly,Kampala,Uganda,False
@@ -41426,7 +41426,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2018-03-27,Hungary,Scotland,0,1,Friendly,Budapest,Hungary,False
 2018-03-27,Greece,Egypt,1,0,Friendly,Zürich,Switzerland,True
 2018-03-27,Germany,Brazil,0,1,Friendly,Berlin,Germany,False
-2018-03-27,Iraq,Syria,1,1,Friendly,Basra,Iraq,False
+2018-03-27,Iraq,Syria,1,1,International Friendship Championship,Basra,Iraq,False
 2018-03-27,Lebanon,Malaysia,2,1,AFC Asian Cup qualification,Beirut,Lebanon,False
 2018-03-27,Taiwan,Singapore,1,0,AFC Asian Cup qualification,Taipei,Taiwan,False
 2018-03-27,North Korea,Hong Kong,2,0,AFC Asian Cup qualification,Pyongyang,North Korea,False
